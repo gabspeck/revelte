@@ -1,17 +1,35 @@
-<canvas bind:this={board} width={width} height={height}></canvas>
+<canvas bind:this={canvas} width={width} height={height}></canvas>
+<ul>
+	<li>Human: {score[Player.Human]}</li>
+	<li>Computer: {score[Player.Computer]}</li>
+</ul>
 
 <script lang='ts'>
 
 	import { onMount } from 'svelte';
 
-	const squareSide = 50;
+	enum Player {
+		Computer = 'red',
+		Human = 'blue'
+	}
+
+	const squareSide = 80;
 	const columns = 8;
 	const rows = 8;
 	const width = columns * squareSide;
 	const height = rows * squareSide;
+	let board: Player[] = [];
 
-	let board: HTMLCanvasElement;
+	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D;
+	let score: Record<Player, number> = {[Player.Human]: 0, [Player.Computer]: 0}
+
+	$: board.forEach((player: Player, xy: number) => {
+		const y = xy % 10;
+		const x = (xy - y) / 10;
+		score[player] += 1;
+		renderPiece(x, y, player);
+	})
 
 	const renderGrid = () => {
 		let x = 0, y = squareSide;
@@ -31,7 +49,7 @@
 		ctx.stroke();
 	};
 
-	const renderPiece = (c: number, r: number, color: string) => {
+	function renderPiece (c: number, r: number, color: string) {
 		let x = squareSide / 2 + ((c - 1) * squareSide);
 		let y = squareSide / 2 + ((r - 1) * squareSide);
 
@@ -39,18 +57,19 @@
 		ctx.arc(x, y, Math.floor(squareSide / 2), 0, 2 * Math.PI);
 		ctx.fillStyle = color;
 		ctx.fill();
-	};
+	}
 
 	const reset = () => {
-		renderGrid();
-		renderPiece(4, 4, 'blue');
-		renderPiece(5, 4, 'red');
-		renderPiece(4, 5, 'red');
-		renderPiece(5, 5, 'blue');
+		board = [];
+		board[44] = Player.Human;
+		board[55] = Player.Human;
+		board[45] = Player.Computer;
+		board[54] = Player.Computer;
 	}
 
 	onMount(() => {
-		ctx = board.getContext('2d');
+		ctx = canvas.getContext('2d');
+		renderGrid();
 		reset();
 	});
 
