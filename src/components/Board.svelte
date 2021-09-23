@@ -81,7 +81,11 @@
 
 		const target = ev.target as HTMLElement;
 		const point: Point = { x: clientX - rect.left, y: clientY - rect.top };
-		target.style.cursor = isMoveValid({ player: Player.Human, square: pointToSquare(point), board }) ? 'crosshair' : 'not-allowed';
+		target.style.cursor = isMoveValid({
+			player: Player.Human,
+			square: pointToSquare(point),
+			board
+		}) ? 'crosshair' : 'not-allowed';
 	};
 
 	const renderGrid = () => {
@@ -123,7 +127,12 @@
 	};
 
 	onMount(() => {
-		ctx = canvas.getContext('2d');
+		let getContextResult: CanvasRenderingContext2D | null;
+		getContextResult = canvas.getContext('2d');
+		if (!getContextResult) {
+			throw new Error('Could not get 2D rendering context');
+		}
+		ctx = getContextResult;
 		renderGrid();
 		reset();
 	});
