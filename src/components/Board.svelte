@@ -1,5 +1,7 @@
-<canvas bind:this={canvas} on:mousemove={highlightValidMove} width={width} height={height}></canvas>
+<canvas bind:this={canvas} on:mousemove={highlightValidMove} on:click={humanMove} width={width}
+				height={height}></canvas>
 <ul>
+	<li>Current player: {currentPlayer}</li>
 	<li>Human: {score[Player.Human]}</li>
 	<li>Computer: {score[Player.Computer]}</li>
 </ul>
@@ -32,10 +34,19 @@
 		NW = -11,
 	}
 
+	let currentSquare = 0;
+
+	const directions: Direction[] = [Direction.N, Direction.NE, Direction.E, Direction.SE, Direction.S, Direction.SW, Direction.W, Direction.NW];
+
 	interface Move {
 		player: Player,
-		square: number
+		start: number
 		board: Player[]
+	}
+
+	interface MoveVector extends Move {
+		direction: Direction,
+		end: number
 	}
 
 	const squareSide = 80;
@@ -44,13 +55,17 @@
 	const width = columns * squareSide;
 	const height = rows * squareSide;
 	let board: Player[] = [];
+	let currentPlayer = Player.Human;
 
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D;
 	let score: Record<Player, number> = { [Player.Human]: 0, [Player.Computer]: 0 };
 
+	$: [Player.Human, Player.Computer].forEach(p => {
+		score[p] = board.filter(sq => sq === p).length;
+	});
+
 	$: board.forEach((player: Player, square: number) => {
-		score[player] += 1;
 		renderPiece(square, player);
 	});
 
@@ -70,25 +85,68 @@
 		return { x, y };
 	};
 
-	const isMoveValid = (move: Move): boolean => {
-		// stub
-		return move.square % 2 == 0;
+	const getMoveVector = ({ start, player, board }: Move): MoveVector | null => {
+		//FIXME: return array with all possible vectors
+		if (board[start]) {
+			return null;
+		}
+		const enemy = player == Player.Human ? Player.Computer : Player.Human;
+		for (const d of directions) {
+			let square = start;
+			if (board[square += d] === enemy) {
+				while (board[square] === enemy) {
+					square += d;
+				}
+				if (board[square] === player) {
+					return { direction: d, start: start, end: square - d, board, player };
+				}
+			}
+		}
+		return null;
+	};
+	const clientCoordsToSquare = ({ clientX, clientY, target }: Partial<MouseEvent>): number => {
+		const rect = (target as Element).getBoundingClientRect();
+		const point: Point = { x: clientX - rect.left, y: clientY - rect.top };
+		return pointToSquare(point);
 	};
 
 	const highlightValidMove = (ev: MouseEvent) => {
-		const { clientX, clientY } = ev;
-		const rect = (ev.target as Element).getBoundingClientRect();
+		const square = clientCoordsToSquare(ev);
 
-		const target = ev.target as HTMLElement;
-		const point: Point = { x: clientX - rect.left, y: clientY - rect.top };
-		target.style.cursor = isMoveValid({
-			player: Player.Human,
-			square: pointToSquare(point),
-			board
-		}) ? 'crosshair' : 'not-allowed';
+		if (currentSquare !== square) {
+			currentSquare = square;
+
+			const target = ev.target as HTMLElement;
+			target.style.cursor = getMoveVector({
+				player: currentPlayer,
+				start: square,
+				board
+			}) ? 'crosshair' : 'not-allowed';
+		}
+	};
+
+	const humanMove = (ev: MouseEvent) => {
+		const square = clientCoordsToSquare(ev);
+		const vector = getMoveVector({ start: square, player: currentPlayer, board });
+		if (vector) {
+			makeMove(vector);
+		}
+	};
+
+	const makeMove = (move: MoveVector) => {
+		console.log(move);
+		const { direction, end, start } = getMoveVector(move);
+
+		for (let square = start; direction > 0 && square <= end || direction < 0 && square >= end; square += direction) {
+			move.board[square] = move.player;
+			board = move.board;
+		}
+		currentPlayer = currentPlayer == Player.Human ? Player.Computer : Player.Human;
 	};
 
 	const renderGrid = () => {
+		ctx.beginPath();
+		ctx.clearRect(0, 0, width, height);
 		let x = 0, y = squareSide;
 		for (let i = 0; i < rows - 1; i++) {
 			ctx.moveTo(x, y);
@@ -117,13 +175,12 @@
 
 	const reset = () => {
 		board = [];
-		for (let scoreKey in score) {
-			score[scoreKey] = 0;
-		}
 		board[44] = Player.Human;
 		board[55] = Player.Human;
 		board[45] = Player.Computer;
 		board[54] = Player.Computer;
+		renderGrid();
+		currentPlayer = Player.Human;
 	};
 
 	onMount(() => {
@@ -133,7 +190,6 @@
 			throw new Error('Could not get 2D rendering context');
 		}
 		ctx = getContextResult;
-		renderGrid();
 		reset();
 	});
 
