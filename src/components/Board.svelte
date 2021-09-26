@@ -54,6 +54,9 @@
 	const rows = 8;
 	const width = columns * squareSide;
 	const height = rows * squareSide;
+	// offset in pixels to avoid subpixel rendering with uneven line widths (i.e. blurry lines)
+	const subpixelOffset = 0.5;
+
 	let board: Player[] = [];
 	let currentPlayer = Player.Human;
 
@@ -76,7 +79,7 @@
 		return col * 10 + row;
 	};
 
-	const squareToPoint = (square: number): Point => {
+	const getSquareCenter = (square: number): Point => {
 		const row = square % 10;
 		const col = (square - row) / 10;
 		const x = squareSide / 2 + ((col - 1) * squareSide);
@@ -157,17 +160,19 @@
 			ctx.lineTo(x, y + squareSide * rows);
 			x += squareSide;
 		}
-		ctx.rect(0, 0, width, height);
+		ctx.rect(0, 0, width - subpixelOffset, height - subpixelOffset);
 		ctx.stroke();
 	};
 
+
 	function renderPiece(square: number, color: string) {
-		const { x, y } = squareToPoint(square);
+		const { x, y } = getSquareCenter(square);
 
 		ctx.beginPath();
-		ctx.arc(x, y, Math.floor(squareSide / 2), 0, 2 * Math.PI);
+		ctx.arc(x, y, Math.floor((squareSide - 10 * ctx.lineWidth) / 2), 0, 2 * Math.PI);
 		ctx.fillStyle = color;
 		ctx.fill();
+
 	}
 
 	const reset = () => {
@@ -182,11 +187,13 @@
 
 	onMount(() => {
 		let getContextResult: CanvasRenderingContext2D | null;
-		getContextResult = canvas.getContext('2d');
+		getContextResult = canvas.getContext('2d', { alpha: false });
 		if (!getContextResult) {
 			throw new Error('Could not get 2D rendering context');
 		}
 		ctx = getContextResult;
+		ctx.translate(subpixelOffset, subpixelOffset);
+		console.log(ctx.lineWidth);
 		reset();
 	});
 
