@@ -167,9 +167,13 @@
 
 	function renderPiece(square: number, color: string) {
 		const { x, y } = getSquareCenter(square);
+		const margin = 10 * ctx.lineWidth;
+
+		const radius = Math.floor((squareSide - margin) / 2);
 
 		ctx.beginPath();
-		ctx.arc(x, y, Math.floor((squareSide - 10 * ctx.lineWidth) / 2), 0, 2 * Math.PI);
+		ctx.clearRect(x + ctx.lineWidth - squareSide / 2, y + ctx.lineWidth - squareSide / 2, squareSide - ctx.lineWidth * 2, squareSide - ctx.lineWidth * 3);
+		ctx.arc(x, y, radius, 0, 2 * Math.PI);
 		ctx.fillStyle = color;
 		ctx.fill();
 
@@ -193,7 +197,6 @@
 		}
 		ctx = getContextResult;
 		ctx.translate(subpixelOffset, subpixelOffset);
-		console.log(ctx.lineWidth);
 		reset();
 	});
 
