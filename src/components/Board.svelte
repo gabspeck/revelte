@@ -136,6 +136,7 @@
 		if (vectors.length) {
 			board = board;
 		}
+		currentPlayer = currentPlayer == Player.Human ? Player.Computer : Player.Human;
 	};
 
 	const makeMove = (move: MoveVector) => {
@@ -143,7 +144,6 @@
 		for (let square = start; direction > 0 && square <= end || direction < 0 && square >= end; square += direction) {
 			move.board[square] = move.player;
 		}
-		currentPlayer = currentPlayer == Player.Human ? Player.Computer : Player.Human;
 	};
 
 	const renderGrid = () => {
