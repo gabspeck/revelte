@@ -1,4 +1,4 @@
-<canvas bind:this={canvas} on:mousemove={highlightValidMove} on:click={humanMove} width={width}
+<canvas bind:this={canvas} on:mousemove={updateCurrentSquare} on:click={humanMove} width={width}
 				height={height}></canvas>
 <ul>
 	<li>Current player: {currentPlayer}</li>
@@ -49,7 +49,7 @@
 		end: number
 	}
 
-	const squareSide = 80;
+	const squareSide = 50;
 	const columns = 8;
 	const rows = 8;
 	const width = columns * squareSide;
@@ -72,6 +72,14 @@
 		renderPiece(square, player);
 	});
 
+	$: if (canvas) {
+			canvas.style.cursor = getMoveVectors({
+				player: currentPlayer,
+				start: currentSquare,
+				board
+			}).length ? 'crosshair' : 'not-allowed';
+		}
+
 	const pointToSquare = ({ x, y }: Point): number => {
 		const col = Math.trunc(x / squareSide + 1);
 		const row = Math.trunc(y / squareSide + 1);
@@ -88,7 +96,7 @@
 		return { x, y };
 	};
 
-	const getMoveVectors = ({ start, player, board }: Move): MoveVector[] => {
+	function getMoveVectors ({ start, player, board }: Move): MoveVector[] {
 		const vectors: MoveVector[] = [];
 		if (!board[start]) {
 			const enemy = player == Player.Human ? Player.Computer : Player.Human;
@@ -105,25 +113,19 @@
 			}
 		}
 		return vectors;
-	};
+	}
+
 	const clientCoordsToSquare = ({ clientX, clientY, target }: Partial<MouseEvent>): number => {
 		const rect = (target as Element).getBoundingClientRect();
 		const point: Point = { x: clientX - rect.left, y: clientY - rect.top };
 		return pointToSquare(point);
 	};
 
-	const highlightValidMove = (ev: MouseEvent) => {
+	const updateCurrentSquare = (ev: MouseEvent) => {
 		const square = clientCoordsToSquare(ev);
 
 		if (currentSquare !== square) {
 			currentSquare = square;
-
-			const target = ev.target as HTMLElement;
-			target.style.cursor = getMoveVectors({
-				player: currentPlayer,
-				start: square,
-				board
-			}).length ? 'crosshair' : 'not-allowed';
 		}
 	};
 
