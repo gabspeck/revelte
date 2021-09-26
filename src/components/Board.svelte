@@ -85,24 +85,23 @@
 		return { x, y };
 	};
 
-	const getMoveVector = ({ start, player, board }: Move): MoveVector | null => {
-		//FIXME: return array with all possible vectors
-		if (board[start]) {
-			return null;
-		}
-		const enemy = player == Player.Human ? Player.Computer : Player.Human;
-		for (const d of directions) {
-			let square = start;
-			if (board[square += d] === enemy) {
-				while (board[square] === enemy) {
-					square += d;
-				}
-				if (board[square] === player) {
-					return { direction: d, start: start, end: square - d, board, player };
+	const getMoveVectors = ({ start, player, board }: Move): MoveVector[] => {
+		const vectors: MoveVector[] = [];
+		if (!board[start]) {
+			const enemy = player == Player.Human ? Player.Computer : Player.Human;
+			for (const d of directions) {
+				let square = start;
+				if (board[square += d] === enemy) {
+					while (board[square] === enemy) {
+						square += d;
+					}
+					if (board[square] === player) {
+						vectors.push({ direction: d, start: start, end: square - d, board, player });
+					}
 				}
 			}
 		}
-		return null;
+		return vectors;
 	};
 	const clientCoordsToSquare = ({ clientX, clientY, target }: Partial<MouseEvent>): number => {
 		const rect = (target as Element).getBoundingClientRect();
@@ -117,29 +116,27 @@
 			currentSquare = square;
 
 			const target = ev.target as HTMLElement;
-			target.style.cursor = getMoveVector({
+			target.style.cursor = getMoveVectors({
 				player: currentPlayer,
 				start: square,
 				board
-			}) ? 'crosshair' : 'not-allowed';
+			}).length ? 'crosshair' : 'not-allowed';
 		}
 	};
 
 	const humanMove = (ev: MouseEvent) => {
 		const square = clientCoordsToSquare(ev);
-		const vector = getMoveVector({ start: square, player: currentPlayer, board });
-		if (vector) {
-			makeMove(vector);
+		const vectors = getMoveVectors({ start: square, player: currentPlayer, board });
+		vectors.forEach(v => makeMove(v));
+		if (vectors.length) {
+			board = board;
 		}
 	};
 
 	const makeMove = (move: MoveVector) => {
-		console.log(move);
-		const { direction, end, start } = getMoveVector(move);
-
+		const { direction, end, start } = move;
 		for (let square = start; direction > 0 && square <= end || direction < 0 && square >= end; square += direction) {
 			move.board[square] = move.player;
-			board = move.board;
 		}
 		currentPlayer = currentPlayer == Player.Human ? Player.Computer : Player.Human;
 	};
