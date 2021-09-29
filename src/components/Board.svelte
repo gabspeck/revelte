@@ -135,8 +135,8 @@
 		vectors.forEach(v => makeMove(v));
 		if (vectors.length) {
 			board = board;
+			currentPlayer = currentPlayer == Player.Human ? Player.Computer : Player.Human;
 		}
-		currentPlayer = currentPlayer == Player.Human ? Player.Computer : Player.Human;
 	};
 
 	const makeMove = (move: MoveVector) => {
