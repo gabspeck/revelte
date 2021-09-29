@@ -34,8 +34,6 @@
 		NW = -11,
 	}
 
-	let currentSquare = 0;
-
 	const directions: Direction[] = [Direction.N, Direction.NE, Direction.E, Direction.SE, Direction.S, Direction.SW, Direction.W, Direction.NW];
 
 	interface Move {
@@ -57,12 +55,15 @@
 	// offset in pixels to avoid subpixel rendering with uneven line widths (i.e. blurry lines)
 	const subpixelOffset = 0.5;
 
+
 	let board: Player[] = [];
 	let currentPlayer = Player.Human;
 
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D;
 	let score: Record<Player, number> = { [Player.Human]: 0, [Player.Computer]: 0 };
+
+	let currentSquare = 0;
 
 	$: [Player.Human, Player.Computer].forEach(p => {
 		score[p] = board.filter(sq => sq === p).length;
@@ -73,30 +74,30 @@
 	});
 
 	$: if (canvas) {
-			canvas.style.cursor = getMoveVectors({
-				player: currentPlayer,
-				start: currentSquare,
-				board
-			}).length ? 'crosshair' : 'not-allowed';
-		}
+		canvas.style.cursor = getMoveVectors({
+			player: currentPlayer,
+			start: currentSquare,
+			board
+		}).length ? 'crosshair' : 'not-allowed';
+	}
 
-	const pointToSquare = ({ x, y }: Point): number => {
+	function pointToSquare({ x, y }: Point): number {
 		const col = Math.trunc(x / squareSide + 1);
 		const row = Math.trunc(y / squareSide + 1);
 
 		return col * 10 + row;
-	};
+	}
 
-	const getSquareCenter = (square: number): Point => {
+	function getSquareCenter (square: number): Point {
 		const row = square % 10;
 		const col = (square - row) / 10;
 		const x = squareSide / 2 + ((col - 1) * squareSide);
 		const y = squareSide / 2 + ((row - 1) * squareSide);
 
 		return { x, y };
-	};
+	}
 
-	function getMoveVectors ({ start, player, board }: Move): MoveVector[] {
+	function getMoveVectors({ start, player, board }: Move): MoveVector[] {
 		const vectors: MoveVector[] = [];
 		if (!board[start]) {
 			const enemy = player == Player.Human ? Player.Computer : Player.Human;
@@ -115,21 +116,22 @@
 		return vectors;
 	}
 
-	const clientCoordsToSquare = ({ clientX, clientY, target }: Partial<MouseEvent>): number => {
+ function clientCoordsToSquare ({ clientX, clientY, target }: Partial<MouseEvent>): number {
 		const rect = (target as Element).getBoundingClientRect();
 		const point: Point = { x: clientX - rect.left, y: clientY - rect.top };
-		return pointToSquare(point);
-	};
 
-	const updateCurrentSquare = (ev: MouseEvent) => {
+		return pointToSquare(point);
+	}
+
+	function updateCurrentSquare (ev: MouseEvent) {
 		const square = clientCoordsToSquare(ev);
 
 		if (currentSquare !== square) {
 			currentSquare = square;
 		}
-	};
+	}
 
-	const humanMove = (ev: MouseEvent) => {
+	function humanMove(ev: MouseEvent) {
 		const square = clientCoordsToSquare(ev);
 		const vectors = getMoveVectors({ start: square, player: currentPlayer, board });
 		vectors.forEach(v => makeMove(v));
@@ -137,16 +139,16 @@
 			board = board;
 			currentPlayer = currentPlayer == Player.Human ? Player.Computer : Player.Human;
 		}
-	};
+	}
 
-	const makeMove = (move: MoveVector) => {
+	function makeMove(move: MoveVector) {
 		const { direction, end, start } = move;
 		for (let square = start; direction > 0 && square <= end || direction < 0 && square >= end; square += direction) {
 			move.board[square] = move.player;
 		}
-	};
+	}
 
-	const renderGrid = () => {
+	function renderGrid() {
 		ctx.beginPath();
 		ctx.clearRect(0, 0, width, height);
 		let x = 0, y = squareSide;
@@ -164,8 +166,7 @@
 		}
 		ctx.rect(0, 0, width - subpixelOffset, height - subpixelOffset);
 		ctx.stroke();
-	};
-
+	}
 
 	function renderPiece(square: number, color: string) {
 		const { x, y } = getSquareCenter(square);
@@ -181,7 +182,7 @@
 
 	}
 
-	const reset = () => {
+	function reset() {
 		board = [];
 		board[44] = Player.Human;
 		board[55] = Player.Human;
@@ -189,7 +190,7 @@
 		board[54] = Player.Computer;
 		renderGrid();
 		currentPlayer = Player.Human;
-	};
+	}
 
 	onMount(() => {
 		let getContextResult: CanvasRenderingContext2D | null;
