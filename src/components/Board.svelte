@@ -24,14 +24,14 @@
 	}
 
 	enum Direction {
-		N = -1,
-		NE = 9,
-		E = 10,
-		SE = 11,
-		S = 1,
-		SW = -9,
-		W = -10,
 		NW = -11,
+		N = -10,
+		NE = -9,
+		E = 1,
+		SE = 11,
+		S = 10,
+		SW = 9,
+		W = -1,
 	}
 
 	const directions: Direction[] = [Direction.N, Direction.NE, Direction.E, Direction.SE, Direction.S, Direction.SW, Direction.W, Direction.NW];
@@ -55,8 +55,8 @@
 	// offset in pixels to avoid subpixel rendering with uneven line widths (i.e. blurry lines)
 	const subpixelOffset = 0.5;
 
-
-	let board: Player[] = [];
+	let boards: Player[][] = [[]];
+	let board: Player[] = boards[0];
 	let currentPlayer = Player.Human;
 
 	let canvas: HTMLCanvasElement;
@@ -65,8 +65,10 @@
 
 	let currentSquare = 0;
 
+	$: boards[0] = board;
+
 	$: [Player.Human, Player.Computer].forEach(p => {
-		score[p] = board.filter(sq => sq === p).length;
+		score[p] = boards.filter(sq => sq === p).length;
 	});
 
 	$: board.forEach((player: Player, square: number) => {
@@ -77,20 +79,20 @@
 		canvas.style.cursor = getMoveVectors({
 			player: currentPlayer,
 			start: currentSquare,
-			board
+			board: board
 		}).length ? 'crosshair' : 'not-allowed';
 	}
 
 	function pointToSquare({ x, y }: Point): number {
-		const col = Math.trunc(x / squareSide + 1);
-		const row = Math.trunc(y / squareSide + 1);
+		const col = Math.trunc(y / squareSide + 1);
+		const row = Math.trunc(x / squareSide + 1);
 
 		return col * 10 + row;
 	}
 
-	function getSquareCenter (square: number): Point {
-		const row = square % 10;
-		const col = (square - row) / 10;
+	function getSquareCenter(square: number): Point {
+		const col = square % 10;
+		const row = (square - col) / 10;
 		const x = squareSide / 2 + ((col - 1) * squareSide);
 		const y = squareSide / 2 + ((row - 1) * squareSide);
 
@@ -116,14 +118,14 @@
 		return vectors;
 	}
 
- function clientCoordsToSquare ({ clientX, clientY, target }: Partial<MouseEvent>): number {
+	function clientCoordsToSquare({ clientX, clientY, target }: Partial<MouseEvent>): number {
 		const rect = (target as Element).getBoundingClientRect();
 		const point: Point = { x: clientX - rect.left, y: clientY - rect.top };
 
 		return pointToSquare(point);
 	}
 
-	function updateCurrentSquare (ev: MouseEvent) {
+	function updateCurrentSquare(ev: MouseEvent) {
 		const square = clientCoordsToSquare(ev);
 
 		if (currentSquare !== square) {
@@ -184,10 +186,10 @@
 
 	function reset() {
 		board = [];
-		board[44] = Player.Human;
-		board[55] = Player.Human;
 		board[45] = Player.Computer;
 		board[54] = Player.Computer;
+		board[44] = Player.Human;
+		board[55] = Player.Human;
 		renderGrid();
 		currentPlayer = Player.Human;
 	}
