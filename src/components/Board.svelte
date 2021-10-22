@@ -68,7 +68,7 @@
 	$: boards[0] = board;
 
 	$: [Player.Human, Player.Computer].forEach(p => {
-		score[p] = boards.filter(sq => sq === p).length;
+		score[p] = board.filter(sq => sq === p).length;
 	});
 
 	$: board.forEach((player: Player, square: number) => {
