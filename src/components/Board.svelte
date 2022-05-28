@@ -4,6 +4,14 @@
 	<li>Current player: {currentPlayer}</li>
 	<li>Human: {score[Player.Human]}</li>
 	<li>Computer: {score[Player.Computer]}</li>
+	<li>Current score: {getScore(board, currentPlayer)}</li>
+	<li>Difficulty (depth):
+		<select bind:value={maxDepth}>
+			{#each [1, 2, 3, 4, 5, 6] as i}
+				<option value='{i}'>{i}</option>
+			{/each}
+		</select>
+	</li>
 </ul>
 <p>
 	<button on:click={reset}>Reset</button>
@@ -33,6 +41,10 @@
 		SW = 9,
 		W = -1,
 	}
+
+	let maxDepth = 2;
+
+	const victory = Number.MAX_VALUE;
 
 	const directions: Direction[] = [Direction.N, Direction.NE, Direction.E, Direction.SE, Direction.S, Direction.SW, Direction.W, Direction.NW];
 
@@ -141,12 +153,148 @@
 			board = board;
 			currentPlayer = currentPlayer == Player.Human ? Player.Computer : Player.Human;
 		}
+		const mmax = minimax(board, maxDepth, Player.Computer)
 	}
 
 	function makeMove(move: MoveVector) {
 		const { direction, end, start } = move;
 		for (let square = start; direction > 0 && square <= end || direction < 0 && square >= end; square += direction) {
 			move.board[square] = move.player;
+		}
+	}
+
+	function getScore(board: Player[], player: Player) {
+
+		const coordValueOffset = -11;
+
+
+		const freeCornersValues = [
+			99, -8, 8, 6, 6, 8, -8, 99, 0,
+			0, -8, -24, -4, -3, -3, -4, -24, -8, 0,
+			0, 8, -4, 7, 4, 4, 7, -4, 8, 0,
+			0, 6, -3, 4, 0, 0, 4, -3, 6, 0,
+			0, 6, -3, 4, 0, 0, 4, -3, 6, 0,
+			0, 8, -4, 7, 4, 4, 7, -4, 8, 0,
+			0, -8, -24, -4, -3, -3, -4, -24, -8, 0,
+			0, 99, -8, 8, 6, 6, 8, -8, 99
+		];
+
+		const playedCornerValues = [
+			99, -8, 8, 6, 6, 8, -8, 99, 0,
+			0, -8, -24, 0, 1, 1, 0, -24, -8, 0,
+			0, 8, 0, 7, 4, 4, 7, 0, 8, 0,
+			0, 6, 1, 4, 1, 1, 4, 1, 6, 0,
+			0, 6, 1, 4, 1, 1, 4, 1, 6, 0,
+			0, 8, 0, 7, 4, 4, 7, 0, 8, 0,
+			0, -8, -24, 0, 1, 1, 1, -24, -8, 0,
+			0, 99, -8, 8, 6, 6, 8, -8, 99
+		];
+
+		let values = freeCornersValues;
+
+		const upperLeft = board[11];
+		const upperRight = board[18];
+		const lowerLeft = board[81];
+		const lowerRight = board[88];
+
+		if (upperLeft || upperRight || lowerLeft || lowerRight) {
+			values = playedCornerValues;
+
+			if (upperLeft){
+				board[11 + Direction.E - coordValueOffset] = - 8;
+				board[11 + Direction.S - coordValueOffset] = - 8;
+				board[11 + Direction.SE - coordValueOffset] = -24;
+			}
+
+			if (upperRight){
+				board[18 + Direction.W - coordValueOffset] = - 8;
+				board[18 + Direction.S - coordValueOffset] = - 8;
+				board[18 + Direction.SW - coordValueOffset] = -24;
+			}
+
+			if (lowerLeft){
+				board[81 + Direction.E - coordValueOffset] = - 8;
+				board[81 + Direction.N - coordValueOffset] = - 8;
+				board[81 + Direction.NE - coordValueOffset] = -24;
+			}
+
+			if (lowerRight){
+				board[88 + Direction.W - coordValueOffset] = - 8;
+				board[88 + Direction.N - coordValueOffset] = - 8;
+				board[88 + Direction.NW - coordValueOffset] = -24;
+			}
+
+		}
+
+		const boardScore = new Map<Player, number>([
+			[Player.Human, 0],
+			[Player.Computer, 0]
+		]);
+
+		let enemyCount = 0;
+
+		values.forEach((value, index) => {
+			const square = index + coordValueOffset;
+			if (board[square]) {
+				if (board[square] !== player) {
+					enemyCount++;
+				}
+				boardScore.set(board[square], boardScore.get(board[square]) + value);
+			}
+		});
+
+		if (enemyCount === 0) {
+			return victory;
+		}
+
+		const friendlyScore = boardScore.get(player);
+		boardScore.delete(player);
+
+		return friendlyScore - boardScore.values().next().value;
+
+	}
+
+	function getValidMoves(board: Player[], player: Player) {
+		const moves = [
+			11, 18, 81, 88, 13, 31, 16, 61,
+			38, 83, 68, 86, 14, 41, 15, 51,
+			48, 84, 58, 85, 33, 36, 63, 66,
+			34, 35, 43, 46, 53, 56, 64, 65,
+			24, 25, 42, 47, 52, 57, 74, 75,
+			23, 26, 32, 37, 62, 67, 73, 76,
+			12, 17, 21, 28, 71, 78, 82, 87,
+			22, 27, 72, 77
+		];
+
+		const validMoves = [];
+
+		moves.forEach(m => {
+			if (getMoveVectors({ start: m, player, board }).length) {
+				validMoves.push(m);
+			}
+		});
+
+		return validMoves;
+
+	}
+
+	function minimax(board: Player[], ply, player) {
+		if (ply === 0 || ply === maxDepth) {
+			return getScore(board, player);
+		}
+		const validMoves = getValidMoves(board, player);
+		if (player === Player.Computer) {
+			let value = -Infinity;
+			for (const m of validMoves) {
+				board[m] = player;
+				value = Math.max(value, minimax(board, ply - 1, Player.Human));
+			}
+		} else {
+			let value = Infinity;
+			for (const m of validMoves) {
+				board[m] = player;
+				value = Math.min(value, minimax(board, ply - 1, Player.Computer));
+			}
 		}
 	}
 
