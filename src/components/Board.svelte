@@ -152,7 +152,8 @@
 
 	function renderGrid() {
 		ctx.beginPath();
-		ctx.clearRect(0, 0, width, height);
+		ctx.fillStyle = 'white'
+		ctx.fillRect(0, 0, width, height);
 		let x = 0, y = squareSide;
 		for (let i = 0; i < rows - 1; i++) {
 			ctx.moveTo(x, y);
@@ -177,7 +178,8 @@
 		const radius = Math.floor((squareSide - margin) / 2);
 
 		ctx.beginPath();
-		ctx.clearRect(x + ctx.lineWidth - squareSide / 2, y + ctx.lineWidth - squareSide / 2, squareSide - ctx.lineWidth * 2, squareSide - ctx.lineWidth * 3);
+		ctx.fillStyle = 'white'
+		ctx.fillRect(x + ctx.lineWidth - squareSide / 2, y + ctx.lineWidth - squareSide / 2, squareSide - ctx.lineWidth * 2, squareSide - ctx.lineWidth * 3);
 		ctx.arc(x, y, radius, 0, 2 * Math.PI);
 		ctx.fillStyle = color;
 		ctx.fill();
