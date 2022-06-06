@@ -25,8 +25,6 @@
 		Human = 'blue'
 	}
 
-	const bestMove = [];
-
 	const opponent = Object.freeze({
 		[Player.Computer]: Player.Human,
 		[Player.Human]: Player.Computer
@@ -162,9 +160,9 @@
 	}
 
 	function computerMove(humanMove) {
-		minimax(boards, Player.Human, humanMove, 0, -Infinity, Infinity);
-		if (bestMove[0]) {
-			makeMove({ player: Player.Computer, square: bestMove[0], board: gameBoard });
+		const { bestMove } = minimax(boards, Player.Human, humanMove, 0, -Infinity, Infinity);
+		if (bestMove) {
+			makeMove({ player: Player.Computer, square: bestMove, board: gameBoard });
 			gameBoard = gameBoard;
 		}
 	}
@@ -214,7 +212,7 @@
 
 		const freeCornersValues = [
 			99, -8, 8, 6, 6, 8, -8, 99, 0,
-			0, -8, -24, -4, -3, -3, -4, -24, -8, 0,
+			-8, -24, -4, -3, -3, -4, -24, -8, 0,
 			0, 8, -4, 7, 4, 4, 7, -4, 8, 0,
 			0, 6, -3, 4, 0, 0, 4, -3, 6, 0,
 			0, 6, -3, 4, 0, 0, 4, -3, 6, 0,
@@ -362,28 +360,27 @@
 		}
 		const validMoves = getValidMoves(boards[currentPly], opponent[player]);
 		let currentMove = PASS;
-		bestMove[ply] = PASS;
+		let bestMove = PASS;
 		for (const validMove of validMoves) {
 			currentMove = validMove;
-			const value = minimax(boards, opponent[player], validMove, currentPly, -vmax, -vmin);
+			const { value } = minimax(boards, opponent[player], validMove, currentPly, -vmax, -vmin);
 			if (value > vmin) {
 				vmin = value;
-				bestMove[ply] = validMove;
 				if (value >= vmax) {
-					return -vmin;
+					return { bestMove: validMove, value: -vmin };
 				}
 			}
 		}
 		if (currentMove === PASS) {
 			if (playedMove === PASS) {
-				return getFinalScore(boards[currentPly], player);
+				return { bestMove: currentMove, value: getFinalScore(boards[currentPly], player) };
 			}
-			const value = minimax(boards, opponent[player], PASS, currentPly, -vmax, -vmin);
+			const { value } = minimax(boards, opponent[player], PASS, currentPly, -vmax, -vmin);
 			if (value > vmin) {
 				vmin = value;
 			}
 		}
-		return -vmin;
+		return { bestMove, value: -vmin };
 	}
 
 	function renderGrid() {
